@@ -20,6 +20,7 @@ package org.apache.rocketmq.mqtt.ds.mq;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.UtilAll;
+import org.apache.rocketmq.remoting.RPCHook;
 
 import java.util.Properties;
 
@@ -28,11 +29,15 @@ public class MqPullConsumer {
     private DefaultMQPullConsumer defaultMQPullConsumer;
 
     public MqPullConsumer(Properties properties) {
-        this(properties.getProperty("NAMESRV_ADDR"));
+        this(properties.getProperty("NAMESRV_ADDR"), MqFactory.buildAclRPCHook());
     }
 
     public MqPullConsumer(String nameSrv) {
-        defaultMQPullConsumer = new DefaultMQPullConsumer();
+        this(nameSrv, null);
+    }
+
+    public MqPullConsumer(String nameSrv, RPCHook rpcHook) {
+        defaultMQPullConsumer = rpcHook == null ? new DefaultMQPullConsumer() : new DefaultMQPullConsumer(rpcHook);
         defaultMQPullConsumer.setNamesrvAddr(nameSrv);
         defaultMQPullConsumer.setInstanceName(this.buildInstanceName());
         defaultMQPullConsumer.setVipChannelEnabled(false);

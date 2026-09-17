@@ -24,6 +24,7 @@ import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerOrderly;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.UtilAll;
+import org.apache.rocketmq.remoting.RPCHook;
 
 import java.util.Properties;
 
@@ -36,7 +37,11 @@ public class MqConsumer  {
     }
 
     public MqConsumer(Properties properties, String nameSrv) {
-        defaultMQPushConsumer = new DefaultMQPushConsumer();
+        this(properties, nameSrv, MqFactory.buildAclRPCHook());
+    }
+
+    public MqConsumer(Properties properties, String nameSrv, RPCHook rpcHook) {
+        defaultMQPushConsumer = rpcHook == null ? new DefaultMQPushConsumer() : new DefaultMQPushConsumer(rpcHook);
         defaultMQPushConsumer.setNamesrvAddr(nameSrv);
         defaultMQPushConsumer.setConsumeMessageBatchMaxSize(1);
         defaultMQPushConsumer.setPullBatchSize(Integer.parseInt(properties.getProperty("pullBatch", "64")));

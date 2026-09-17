@@ -21,6 +21,7 @@ package org.apache.rocketmq.mqtt.ds.mq;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.UtilAll;
+import org.apache.rocketmq.remoting.RPCHook;
 
 import java.util.Properties;
 
@@ -30,11 +31,15 @@ public class MqProducer   {
     private DefaultMQProducer defaultMQProducer;
 
     public MqProducer(Properties properties) {
-        this(properties.getProperty("NAMESRV_ADDR"));
+        this(properties.getProperty("NAMESRV_ADDR"), MqFactory.buildAclRPCHook());
     }
 
     public MqProducer(String nameSrv) {
-        defaultMQProducer = new DefaultMQProducer();
+        this(nameSrv, null);
+    }
+
+    public MqProducer(String nameSrv, RPCHook rpcHook) {
+        defaultMQProducer = rpcHook == null ? new DefaultMQProducer() : new DefaultMQProducer(rpcHook);
         defaultMQProducer.setNamesrvAddr(nameSrv);
         defaultMQProducer.setInstanceName(buildInstanceName());
         defaultMQProducer.setVipChannelEnabled(false);

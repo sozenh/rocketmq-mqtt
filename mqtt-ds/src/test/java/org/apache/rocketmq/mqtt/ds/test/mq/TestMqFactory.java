@@ -17,6 +17,8 @@
 
 package org.apache.rocketmq.mqtt.ds.test.mq;
 
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.rocketmq.acl.common.AclClientRPCHook;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyContext;
@@ -25,7 +27,12 @@ import org.apache.rocketmq.client.consumer.listener.MessageListener;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerOrderly;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.mqtt.ds.mq.MqAdmin;
+import org.apache.rocketmq.mqtt.ds.mq.MqConsumer;
 import org.apache.rocketmq.mqtt.ds.mq.MqFactory;
+import org.apache.rocketmq.mqtt.ds.mq.MqProducer;
+import org.apache.rocketmq.mqtt.ds.mq.MqPullConsumer;
+import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,5 +87,37 @@ public class TestMqFactory {
 
         mqAdminExt = MqFactory.buildDefaultMQAdminExt(group, nameSrv);
         Assert.assertEquals(group, mqAdminExt.getAdminExtGroup());
+    }
+
+    @Test
+    public void testBuildAclRPCHook() {
+        Assert.assertNull(MqFactory.buildAclRPCHook("", "secretKey"));
+        Assert.assertNull(MqFactory.buildAclRPCHook("accessKey", ""));
+        Assert.assertNull(MqFactory.buildAclRPCHook(" ", "secretKey"));
+
+        RPCHook rpcHook = MqFactory.buildAclRPCHook("accessKey", "secretKey");
+        Assert.assertTrue(rpcHook instanceof AclClientRPCHook);
+    }
+
+    @Test
+    public void testMqClientWithRpcHook() throws IllegalAccessException {
+        RPCHook rpcHook = MqFactory.buildAclRPCHook("accessKey", "secretKey");
+        Properties properties = new Properties();
+
+        MqProducer mqProducer = new MqProducer(nameSrv, rpcHook);
+        Object producerHook = FieldUtils.readDeclaredField(mqProducer.getDefaultMQProducer().getDefaultMQProducerImpl(), "rpcHook", true);
+        Assert.assertSame(rpcHook, producerHook);
+
+        MqConsumer mqConsumer = new MqConsumer(properties, nameSrv, rpcHook);
+        Object pushConsumerHook = FieldUtils.readDeclaredField(mqConsumer.getDefaultMQPushConsumer().getDefaultMQPushConsumerImpl(), "rpcHook", true);
+        Assert.assertSame(rpcHook, pushConsumerHook);
+
+        MqPullConsumer mqPullConsumer = new MqPullConsumer(nameSrv, rpcHook);
+        Object pullConsumerHook = FieldUtils.readDeclaredField(mqPullConsumer.getDefaultMQPullConsumer().getDefaultMQPullConsumerImpl(), "rpcHook", true);
+        Assert.assertSame(rpcHook, pullConsumerHook);
+
+        MqAdmin mqAdmin = new MqAdmin(nameSrv, rpcHook);
+        Object adminHook = FieldUtils.readDeclaredField(mqAdmin.getDefaultMQAdminExt().getDefaultMQAdminExtImpl(), "rpcHook", true);
+        Assert.assertSame(rpcHook, adminHook);
     }
 }

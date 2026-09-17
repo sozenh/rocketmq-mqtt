@@ -20,6 +20,7 @@ package org.apache.rocketmq.mqtt.ds.mq;
 
 
 import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 
 import java.util.Properties;
@@ -28,11 +29,15 @@ public class MqAdmin {
     private DefaultMQAdminExt defaultMQAdminExt;
 
     public MqAdmin(Properties properties) {
-        this(properties.getProperty("NAMESRV_ADDR"));
+        this(properties.getProperty("NAMESRV_ADDR"), MqFactory.buildAclRPCHook());
     }
 
     public MqAdmin(String nameSrv) {
-        defaultMQAdminExt = new DefaultMQAdminExt();
+        this(nameSrv, null);
+    }
+
+    public MqAdmin(String nameSrv, RPCHook rpcHook) {
+        defaultMQAdminExt = rpcHook == null ? new DefaultMQAdminExt() : new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setVipChannelEnabled(false);
         defaultMQAdminExt.setNamesrvAddr(nameSrv);
     }

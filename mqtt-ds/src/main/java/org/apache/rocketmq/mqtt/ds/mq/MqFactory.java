@@ -22,12 +22,18 @@ import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.MessageListener;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.acl.common.AclClientRPCHook;
+import org.apache.rocketmq.acl.common.SessionCredentials;
+import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 
 import java.util.Properties;
 
 
 public class MqFactory {
+    public static final String ROCKETMQ_ACCESS_KEY = "ROCKETMQ_ACCESS_KEY";
+    public static final String ROCKETMQ_SECRET_KEY = "ROCKETMQ_SECRET_KEY";
+
     public static synchronized DefaultMQProducer buildDefaultMQProducer(String group, Properties properties) {
         MqProducer mqProducer = new MqProducer(properties);
         mqProducer.setProducerGroup(group);
@@ -78,5 +84,20 @@ public class MqFactory {
         MqAdmin mqadmin = new MqAdmin(nameSrv);
         mqadmin.setAdminGroup(group);
         return mqadmin.getDefaultMQAdminExt();
+    }
+
+    public static RPCHook buildAclRPCHook() {
+        return buildAclRPCHook(System.getenv(ROCKETMQ_ACCESS_KEY), System.getenv(ROCKETMQ_SECRET_KEY));
+    }
+
+    public static RPCHook buildAclRPCHook(String accessKey, String secretKey) {
+        if (isBlank(accessKey) || isBlank(secretKey)) {
+            return null;
+        }
+        return new AclClientRPCHook(new SessionCredentials(accessKey, secretKey));
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
