@@ -133,7 +133,14 @@ public class DefaultChannelManager implements ChannelManager {
         if (channel.isActive()) {
             channel.close();
         }
-        logger.info("Close Connect of channel {} from {} by reason of {}", channel, from, reason);
+        // Channels that never sent a MQTT CONNECT packet (e.g. kubernetes tcp
+        // probes) are logged at debug to avoid flooding mqtt.log; connections
+        // that did send CONNECT (incl. auth failures) stay at info.
+        if (clientId == null) {
+            logger.debug("Close Connect of channel {} from {} by reason of {}", channel, from, reason);
+        } else {
+            logger.info("Close Connect of channel {} from {} by reason of {}", channel, from, reason);
+        }
     }
 
     @Override

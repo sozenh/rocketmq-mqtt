@@ -98,7 +98,7 @@ public class NotifyManager {
             defaultMQPushConsumer.start();
             defaultMQProducer.start();
         } catch (Exception e) {
-            logger.error("", e);
+            logger.error("start notify mq client failed", e);
         }
 
         scheduler = new ScheduledThreadPoolExecutor(1, new ThreadFactoryImpl("Refresh_Notify_Topic_"));
@@ -106,7 +106,7 @@ public class NotifyManager {
             try {
                 refresh();
             } catch (Exception e) {
-                logger.error("", e);
+                logger.error("notify manager refresh failed", e);
             }
         }, 0, 5, TimeUnit.SECONDS);
 
@@ -117,7 +117,7 @@ public class NotifyManager {
 
     private void refresh() throws MQClientException {
         Set<String> tmp = metaPersistManager.getAllFirstTopics();
-        logger.info("Notify Manager is refreshing, all first topic is " + tmp);
+        logger.debug("Notify Manager is refreshing, all first topic is " + tmp);
 
         if (tmp == null || tmp.isEmpty()) {
             return;
@@ -136,7 +136,7 @@ public class NotifyManager {
                     topics.add(topic);
                 }
             } catch (TopicNotExistException e) {
-                logger.error("", e);
+                logger.debug("skip first topic not created on broker: {}", e.getMessage());
             }
         }
         Iterator<String> iterator = topics.iterator();
@@ -183,7 +183,7 @@ public class NotifyManager {
                 notifyMessage(messageEvents);
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             } catch (Exception e) {
-                logger.error("", e);
+                logger.error("notify message consume failed", e);
                 return ConsumeConcurrentlyStatus.RECONSUME_LATER;
             }
         }
@@ -239,7 +239,7 @@ public class NotifyManager {
                 }
                 nodeFailCount.incrementAndGet();
             } catch (Exception e) {
-                logger.error("", e);
+                logger.error("notify events to cs node {} failed", node, e);
                 result = false;
             } finally {
                 if (!result) {
